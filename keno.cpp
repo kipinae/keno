@@ -1,12 +1,28 @@
+#define __USE_MINGW_ANSI_STDIO 0
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-//#include <string>
+#include <fstream>
+#include <string>
 //#include <windows.h>
 using namespace std;
 
+class Pelitili {
+private:
+    fstream tiliTiedosto;
+    string sisalto;
+
+public:
+    Pelitili() : tiliTiedosto("pelitili.txt") {}
+    void alustaTiedot();
+    void tiliValikko();
+    void paivita(int, string);
+    void tallenna();
+    void naytaTiedot();
+};
+
 //prototyypit
-int paavalikko();
+int paavalikko(Pelitili&);
 void rivinSyotto(int*, int);
 bool syotteenTarkistus(int*, int);
 bool arvoKenoRivi(int*, int);
@@ -19,9 +35,10 @@ int main() {
 	int arvottuRivi[20];
 	srand(time(0));
 	int t = 0; //arvottu numero
+	Pelitili tili;
 
-	valinta = paavalikko();
-
+	tili.alustaTiedot();
+	valinta = paavalikko(tili);
 
 	if (valinta == 0) {
 		return 0;
@@ -38,8 +55,7 @@ int main() {
 		}
 
 		rivinSyotto(rivi1, kenoTaso);
-		
-		
+
 		int i;
 		for (i = 0; i < 20; i++) {
 			t = 1 + (rand() % 70);
@@ -48,14 +64,11 @@ int main() {
 			}
 			else { i--; }
 		}
-		
+
 		naytaKenoRivi(arvottuRivi);
-
-
-
 	}
 	else if (valinta == 2) {
-
+        tili.tiliValikko();
 	}
 	else if (valinta == 3) {
 
@@ -73,35 +86,36 @@ int main() {
 
 
 ////////////////////////////////////////////////////////////////
-// Tulostaa päävalikon ja kysyy käyttäjältä halutun toiminnon.
-// Valinta palautetaan pääohjelmaan.
+// Tulostaa paavalikon ja kysyy kayttajalta halutun toiminnon.
+// Valinta palautetaan paaohjelmaan.
 //
 ////////////////////////////////////////////////////////////////
-int paavalikko() {
+int paavalikko(Pelitili& tili) {
 
 	char valinta = '0';
 	int syotteenKoko;
 	cout << "Kenopelisimulaattori" << endl;
 	cout << "====================" << endl;
-	cout << endl;
+	tili.naytaTiedot();
 	cout << "Toiminnot\n";
 	cout << "1) Pelaa kenoa\n";
 	cout << "2) Pelitili\n";
-	cout << "l/L Lopeta.\n";
-
-
+	cout << "L) Lopeta.\n";
 
 	while (valinta == '0') {
 		cout << "Syota valintasi: ";
 		cin >> valinta;
 
 
-		int valintaInt = valinta - '0'; //muutetaan käyttäjän valinta char -> int vähentämällä ASCII arvo 48 eli '0'
+		int valintaInt = valinta - '0'; //muutetaan kayttajan valinta char -> int vahentamalla ASCII arvo 48 eli '0'
 		if (valinta == 'l' || valinta == 'L') {
+            tili.tallenna();
+            tili.naytaTiedot();
+            cout << "Paina mita tahansa lopettaaksesi ohjelman.";
 			return 0;
 		}
 		else if (valintaInt > 0 && valintaInt < 10) {
-			cout << "Valintasi: " << valintaInt << endl;;
+			cout << "\nValintasi: " << valintaInt << endl;;
 			return valintaInt;
 		}
 		else {
@@ -111,10 +125,9 @@ int paavalikko() {
 	}
 }
 
-
 ////////////////////////////////////////////////////////////////
-// Rivin syöttö aliohjelma. Funktioon halutun rivin pointteri
-// ja pelatun rivin keno taso. Käyttämättömät rivit täytetään  
+// Rivin syotto aliohjelma. Funktioon halutun rivin pointteri
+// ja pelatun rivin keno taso. Kayttamattomat rivit taytetaan
 //	nollilla
 ////////////////////////////////////////////////////////////////
 void rivinSyotto(int* rivi, int taso) {
@@ -173,7 +186,7 @@ void rivinSyotto(int* rivi, int taso) {
 				}
 			}
 			else {
-				cin.clear();  
+				cin.clear();
 				cin.ignore(100, '\n');
 				cin >> vastaus;
 			}
@@ -182,10 +195,9 @@ void rivinSyotto(int* rivi, int taso) {
 
 }
 
-
 ////////////////////////////////////////////////////////////////
-// Tarkistaa käyttäjän syötteen, onko numero oikealla alueella
-// ja että luku ei ole jo rivissä.
+// Tarkistaa kayttajan syotteen, onko numero oikealla alueella
+// ja etta luku ei ole jo rivissa.
 // Funktioon halutun rivin pointteri ja tarkistettava numero
 ////////////////////////////////////////////////////////////////
 bool syotteenTarkistus(int* rivi, int numero) {
@@ -207,7 +219,7 @@ bool syotteenTarkistus(int* rivi, int numero) {
 }
 
 ////////////////////////////////////////////////////////////////
-//Aliohjelmaan syötetään arvottu numero ja sitä verrataan olemassa olevaan kenoriviin 
+//Aliohjelmaan syotetaan arvottu numero ja sita verrataan olemassa olevaan kenoriviin
 //
 //
 ////////////////////////////////////////////////////////////////
@@ -215,11 +227,11 @@ bool arvoKenoRivi(int* kenorivi, int t) {
 
 
 	bool tarkistus = true;
-	
+
 	int i = 0;
 	int j = 0;
 	for (i = 0; i < 20; i++) {
-		
+
 		if (t > 0 && t <= 70) {
 			for (j = 0; j < 20; j++) {
 				if (kenorivi[j] == t) {
@@ -243,4 +255,123 @@ void naytaKenoRivi(int* kenorivi) {
 	}
 	cout << "]" << endl;
 
+}
+
+////////////////////////////////////////////////////////////////
+//Alustetaan pelitili
+//
+//
+////////////////////////////////////////////////////////////////
+void Pelitili::alustaTiedot() {
+    string rivi;
+    if (tiliTiedosto.is_open()) {
+        while (!tiliTiedosto.eof()) {
+            getline(tiliTiedosto, rivi);
+            this->sisalto.append(rivi);
+            this->sisalto.append("\n");
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////
+//Pelaajatilivalikko
+//
+//
+////////////////////////////////////////////////////////////////
+void Pelitili::tiliValikko() {
+    int val;
+    string uusiNimi, uusiSaldoStr;
+    int uusiSaldo;
+
+    cout << "\nMita haluat tehda?\n";
+    cout << "1. Nayta tiedot\n";
+    cout << "2. Vaihda pelaajanimi\n";
+    cout << "3. Lisaa saldoa\n";
+    cout << "4. Siirry paavalikkoon\n";
+    cout << "Valitse: ";
+    cin >> val;
+
+    switch (val) {
+    case 1:
+        naytaTiedot();
+        tiliValikko();
+        break;
+    case 2:
+        cout << "Anna uusi nimi: ";
+        cin >> uusiNimi;
+        paivita(val, uusiNimi);
+        break;
+    case 3:
+        cout << "Kuinka paljon lisataan saldoa? ";
+        cin >> uusiSaldo;
+        uusiSaldoStr = to_string(uusiSaldo);
+        paivita(val, uusiSaldoStr);
+        break;
+    case 4:
+        paavalikko(*this);
+        break;
+    default:
+        cout << "Valinta ei kelpaa!";
+        tiliValikko();
+    }
+}
+
+////////////////////////////////////////////////////////////////
+//Paivita nimi
+//
+//
+////////////////////////////////////////////////////////////////
+void Pelitili::paivita(int rivi, string arvo) {
+
+    string alkuS;
+    string loppuS = "\n";
+
+    switch (rivi) {
+    //Nimi
+    case 2:
+        alkuS = "Nimi: ";
+        break;
+    //Saldo
+    case 3:
+        alkuS = "Saldo: ";
+        break;
+    default:
+        cout << "Pelaajatilin paivitys epaonnistui.\n";
+        tiliValikko();
+    }
+
+    unsigned int alku = this->sisalto.find(alkuS) + alkuS.length();
+    unsigned int loppu = this->sisalto.find("\n", alku);
+
+    if (alku != string::npos && loppu != string::npos) {
+        string vanha = this->sisalto.substr(alku, loppu - alku);
+        this->sisalto.replace(alku, vanha.length(), arvo);
+    }
+    else {
+        cout << "Pelaajatilin paivitys epaonnistui.\n";
+    }
+    tiliValikko();
+}
+
+////////////////////////////////////////////////////////////////
+//Pelaajatiedon tallennus tiedostoon
+//
+//
+////////////////////////////////////////////////////////////////
+void Pelitili::tallenna() {
+    if (tiliTiedosto.is_open()) {
+        //TODO: ei toimi
+//        tiliTiedosto << this->sisalto;
+//        cout << "\nPelitilin tiedot tallennettu." << endl;
+    }
+    tiliTiedosto.close();
+}
+
+////////////////////////////////////////////////////////////////
+//Naytetaan pelitilin tiedot
+//
+//
+////////////////////////////////////////////////////////////////
+void Pelitili::naytaTiedot() {
+    cout << "\n" << this->sisalto;
 }
